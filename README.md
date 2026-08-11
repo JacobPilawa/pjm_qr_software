@@ -7,6 +7,8 @@ overlay for vMix.
 Competitor data can come from the live tournament API, bundled backup CSVs, or
 a fully manual label. QR detection boxes appear only in the operator dashboard.
 
+Demo video: [Watch the PJM QR Operator demo](https://www.youtube.com/watch?v=i5WK0yrluE8)
+
 ## Setup and run
 
 Requires 64-bit Python 3.11+ and Node.js 22.13+.
