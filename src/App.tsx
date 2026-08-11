@@ -16,7 +16,8 @@ const initialState: RuntimeState = {
     locked: false, missingSeconds: 0, acquireHits: 3, hitWindowSeconds: 1,
     switchMissingSeconds: .65, focusHoldSeconds: 2, switchAreaRatio: 1.35,
   },
-  decoderPipeline: "WeChatQRCode + super-resolution → ZXing-C++ → OpenCV",
+  decoderPipeline: "Primary QR detector only",
+  decoderMode: "fast",
   activeDecoder: "Waiting", rosterId: "sample_competitors", rosterLabel: "Sample Competitors",
   roundId: "round_1", roundName: "Individual Round 1", overlayPosition: "left",
   overlayEnabled: true, overlayX: 30, overlayY: 860, overlayWidth: 800, overlayHeight: 190,
@@ -199,14 +200,15 @@ function ControlRoom({ state, connected }: { state: RuntimeState; connected: boo
   };
 
   useEffect(() => {
+    const captureIntervalMs = state.decoderMode === "fast" ? 33 : 80;
     const timer = window.setInterval(() => {
       const video = videoRef.current;
       if (cameraRunning && video && video.readyState >= 2) {
         void sendImage(video, video.videoWidth, video.videoHeight);
       }
-    }, 80);
+    }, captureIntervalMs);
     return () => window.clearInterval(timer);
-  }, [cameraRunning, state.sourceId]);
+  }, [cameraRunning, state.sourceId, state.decoderMode]);
 
   const usePhoto = async (file: File) => {
     if (state.sourceId !== "browser") await selectSource("browser");
@@ -384,12 +386,19 @@ function ControlRoom({ state, connected }: { state: RuntimeState; connected: boo
         <details className="panel compact-details" open>
           <summary><span className="label">DIAGNOSTICS</span><strong>{state.detections.length} QR VISIBLE</strong></summary>
           <div className="compact-detail-body diagnostic-list">
+            <div className="decoder-mode-heading"><span className="setting-label">QR scan mode<InfoTip text="Fast runs only the primary detector and immediately accepts misses. Advanced retries misses with additional decoders and periodic full-resolution scans, improving difficult or distant reads at a substantial FPS cost."/></span><strong>{state.decoderMode.toUpperCase()}</strong></div>
+            <div className="decoder-mode-switch" role="group" aria-label="QR scan mode">
+              <button type="button" className={state.decoderMode === "fast" ? "active" : ""} onClick={() => void post("/api/decoder-mode", { mode: "fast" })}>FAST</button>
+              <button type="button" className={state.decoderMode === "advanced" ? "active" : ""} onClick={() => void post("/api/decoder-mode", { mode: "advanced" })}>ADVANCED</button>
+            </div>
+            <p className="decoder-mode-note">{state.decoderMode === "fast" ? "Primary detector only. Best FPS; misses are ignored." : "Fallback decoders and full-resolution rescue enabled. Best for difficult or distant codes."}</p>
             <button type="button" className={`diagnostic-box-button ${state.showDiagnosticBoxes ? "on" : ""}`} onClick={() => void post("/api/diagnostic-settings", { showBoxes: !state.showDiagnosticBoxes })}>QR BOXES: {state.showDiagnosticBoxes ? "ON" : "OFF"}</button>
             <p className="operator-only-note">Operator preview only. Active QR is thick green; other visible QRs are thin red. These boxes are never sent to the broadcast overlay.</p>
             <div><span>Runtime</span><strong>{state.status.toUpperCase()}</strong></div>
             <div><span>Source</span><strong>{state.sourceLabel}</strong></div>
             <div><span>Input</span><strong>{state.width}×{state.height} · {state.sourceFps.toFixed(1)} fps</strong></div>
             <div><span>Processing</span><strong>{state.inferenceMs.toFixed(0)} ms · {state.processedFps.toFixed(1)} fps</strong></div>
+            <div><span>Scan mode</span><strong>{state.decoderMode === "fast" ? "FAST" : "ADVANCED"}</strong></div>
             <div><span>Decoder</span><strong>{state.activeDecoder}</strong></div>
             <div><span>Focused dropout</span><strong>{state.focus.missingSeconds.toFixed(2)} s</strong></div>
             <div><span>Candidate lock</span><strong>{state.focus.locked ? "LOCKED" : "AUTO"}</strong></div>

@@ -371,6 +371,12 @@ input[type="color"] { width: 44px; height: 28px; padding: 2px; border: 1px solid
 .number-setting input { width: 62px; height: 27px; }
 .focus-controls p { color: #78898e; font-size: 9px; line-height: 1.45; }
 .operator-only-note { margin: 6px 0 9px; padding: 7px 8px; color: #f1b643; background: #211e14; border: 1px solid #4d4329; font-size: 9px; line-height: 1.4; }
+.decoder-mode-heading { min-height: 28px; display: flex; align-items: center; justify-content: space-between; color: #84969c; font-size: 10px; }
+.decoder-mode-heading strong { color: #9fded4; font: 700 8px ui-monospace, monospace; letter-spacing: .08em; }
+.decoder-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.decoder-mode-switch button { min-height: 32px; color: #9babb0; background: #151e22; border: 1px solid #39494f; border-radius: 3px; cursor: pointer; font: 700 9px ui-monospace, SFMono-Regular, monospace; letter-spacing: .06em; }
+.decoder-mode-switch button.active { color: #0c211d; background: #55d6c2; border-color: #55d6c2; }
+.decoder-mode-note { margin: 6px 0 9px; color: #78898e; font-size: 9px; line-height: 1.4; }
 .diagnostic-box-button { width: 100%; min-height: 34px; color: #e98579; background: #261716; border: 1px solid #743f39; border-radius: 3px; cursor: pointer; font: 700 10px ui-monospace, SFMono-Regular, monospace; letter-spacing: .06em; }
 .diagnostic-box-button.on { color: #dffaf0; background: #153028; border-color: #43d17d; }
 .overlay-edit-help { margin: 9px 0; color: #91a1a6; font-size: 9px; line-height: 1.45; }

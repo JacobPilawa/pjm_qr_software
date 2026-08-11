@@ -62,6 +62,7 @@ export type RuntimeState = {
   onAir: Competitor | null;
   focus: FocusState;
   decoderPipeline: string;
+  decoderMode: "fast" | "advanced";
   activeDecoder: string;
   rosterId: string;
   rosterLabel: string;

@@ -59,6 +59,8 @@ terminal to stop both services.
 4. **Check the result.** **Detected Competitor** shows the current candidate and
    provides overlay on/off, lock, and reset controls. **Diagnostics** can draw
    green and red QR boxes in the operator preview; these never appear on air.
+   Its **Fast** scan mode uses only the primary detector, while **Advanced** adds
+   slower fallback and full-resolution scans for difficult or distant codes.
 5. **Prepare the graphic.** In **Overlay Content**, drag and resize the
    lower-third and choose whether member names and nationality are included.
 6. **Send it to vMix.** In **vMix Outputs**, select the appropriate local or LAN

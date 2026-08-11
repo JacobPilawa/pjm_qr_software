@@ -38,7 +38,7 @@ class QRDecoder:
             "decoder": decoder,
         }
 
-    def decode(self, image: np.ndarray) -> list[dict[str, Any]]:
+    def decode(self, image: np.ndarray, advanced_fallback: bool = False) -> list[dict[str, Any]]:
         observations: list[dict[str, Any]] = []
         try:
             values, points = self.wechat.detectAndDecode(image)
@@ -51,7 +51,7 @@ class QRDecoder:
         except cv2.error:
             pass
 
-        if not observations:
+        if advanced_fallback and not observations:
             try:
                 for barcode in zxingcpp.read_barcodes(
                     image,
@@ -72,7 +72,7 @@ class QRDecoder:
             except (RuntimeError, ValueError):
                 pass
 
-        if not observations:
+        if advanced_fallback and not observations:
             try:
                 ok, values, points, _ = self.basic.detectAndDecodeMulti(image)
             except cv2.error:

@@ -33,6 +33,7 @@ class RuntimeState:
     onAir: dict[str, Any] | None = None
     focus: dict[str, Any] = field(default_factory=dict)
     decoderPipeline: str = ""
+    decoderMode: str = "fast"
     activeDecoder: str = "Waiting"
     rosterId: str = ""
     rosterLabel: str = ""
@@ -65,7 +66,7 @@ class QRRuntime:
         self.focus = FocusSelector()
         self.event_data = EventDataService(root / "data/backup", self.roster.table_by_qr)
         self._state = RuntimeState(
-            decoderPipeline=self.decoder.description,
+            decoderPipeline="Primary QR detector only",
             rosterId=roster_info.id,
             rosterLabel=roster_info.label,
             roundId=first_round["id"],
@@ -305,6 +306,22 @@ class QRRuntime:
             with self._state_lock:
                 self._state.showDiagnosticBoxes = show_boxes
 
+    def configure_decoder_mode(self, mode: str) -> None:
+        if mode not in {"fast", "advanced"}:
+            raise ValueError("Decoder mode must be fast or advanced")
+        with self._state_lock:
+            self._state.decoderMode = mode
+            self._state.decoderPipeline = (
+                "Primary QR detector only"
+                if mode == "fast"
+                else self.decoder.description
+            )
+            self._state.message = (
+                "Fast QR mode · primary detector only"
+                if mode == "fast"
+                else "Advanced QR mode · fallback decoders enabled"
+            )
+
     def wait_for_jpeg(self, sequence: int) -> tuple[int, bytes | None]:
         with self._frame_lock:
             self._frame_lock.wait_for(lambda: self._jpeg_sequence != sequence or self._stop.is_set(), timeout=1.0)
@@ -421,14 +438,16 @@ class QRRuntime:
                     )
                 else:
                     inference_frame = frame
-                observations = self.decoder.decode(inference_frame)
+                with self._state_lock:
+                    advanced_fallback = self._state.decoderMode == "advanced"
+                observations = self.decoder.decode(inference_frame, advanced_fallback=advanced_fallback)
                 observations_from_scaled = inference_frame is not frame
                 if observations:
                     misses_since_rescue = 0
                 else:
                     misses_since_rescue += 1
-                    if inference_scale < 1.0 and misses_since_rescue >= 5:
-                        observations = self.decoder.decode(frame)
+                    if advanced_fallback and inference_scale < 1.0 and misses_since_rescue >= 5:
+                        observations = self.decoder.decode(frame, advanced_fallback=True)
                         observations_from_scaled = False
                         misses_since_rescue = 0
 

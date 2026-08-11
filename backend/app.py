@@ -114,6 +114,10 @@ class DiagnosticUpdate(BaseModel):
     showBoxes: bool | None = None
 
 
+class DecoderModeUpdate(BaseModel):
+    mode: str = Field(pattern=r"^(fast|advanced)$")
+
+
 @app.get("/api/status")
 def status():
     return runtime.snapshot()
@@ -311,6 +315,12 @@ def overlay_enabled(update: OverlayEnabledUpdate):
 @app.post("/api/diagnostic-settings")
 def diagnostic_settings(update: DiagnosticUpdate):
     runtime.configure_diagnostics(update.showBoxes)
+    return runtime.snapshot()
+
+
+@app.post("/api/decoder-mode")
+def decoder_mode(update: DecoderModeUpdate):
+    runtime.configure_decoder_mode(update.mode)
     return runtime.snapshot()
 
 
