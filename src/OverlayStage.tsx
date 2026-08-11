@@ -12,7 +12,7 @@ export function DetectionLayer({ state }: { state: RuntimeState }) {
       const points = detection.corners.map((point) => point.join(",")).join(" ");
       const first = detection.corners[0] ?? [0, 0];
       const color = detection.focused ? "#43d17d" : "#ef5b55";
-      const label = `${detection.focused ? "ACTIVE" : "INACTIVE"} · ${detection.table ? `TABLE ${detection.table}` : "UNKNOWN"} · ${detection.hits}/${state.focus.requiredHits} · ${detection.decoder}`;
+      const label = `${detection.focused ? "ACTIVE" : "INACTIVE"} · ${detection.table ? `TABLE ${detection.table}` : "UNKNOWN"} · ${detection.hits}/${state.focus.requiredHits}`;
       return <g key={`${detection.value}-${points}`}>
         {detection.focused && <polygon points={points} fill="rgba(67,209,125,.09)" stroke="#071015" strokeWidth="14" vectorEffect="non-scaling-stroke"/>}
         <polygon points={points} fill="none" stroke={color} strokeWidth={detection.focused ? 8 : 3} vectorEffect="non-scaling-stroke"/>
