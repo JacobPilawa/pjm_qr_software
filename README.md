@@ -9,7 +9,21 @@ a fully manual label. QR detection boxes appear only in the operator dashboard.
 
 ## Setup and run
 
-Requires Python 3.11+ and Node.js 22.13+.
+Requires 64-bit Python 3.11+ and Node.js 22.13+.
+
+### Windows
+
+Install [Python for Windows](https://www.python.org/downloads/windows/) with
+**Add Python to PATH** enabled, then install the current
+[Node.js LTS](https://nodejs.org/). Double-click `start_windows.bat` in the
+project folder.
+
+The first launch creates a private Python environment and installs all missing
+dependencies in the same window. It then starts both services and opens the
+dashboard automatically. Keep that window open; press `Ctrl+C` to stop the app.
+If Windows Firewall asks, allow Python and Node.js on private networks.
+
+### macOS
 
 ```bash
 cd pjm_qr_software
@@ -21,7 +35,9 @@ npm install
 ```
 
 The startup script opens the dashboard automatically. Press `Ctrl+C` in its
-terminal to stop both servers.
+terminal to stop both services.
+
+### Local addresses
 
 - Dashboard: `http://127.0.0.1:5174`
 - vMix browser overlay: `http://127.0.0.1:5174/overlay/main`
@@ -56,8 +72,10 @@ terminal to stop both servers.
 - Manual presets are stored in the operator browser, not in project files.
 - `data/rosters/sample_competitors.csv` contains the fixed QR-to-table mapping
   and is required even though its filename says `sample`.
-- NDI is optional. The NDI runtime is not bundled; install NDI Tools on the Mac
-  if NDI input is needed. Browser camera input works without it.
+- NDI is optional. The NDI runtime is not bundled; install 64-bit NDI Tools on
+  the computer if NDI input is needed. Browser camera input works without it.
+- On Windows, `start_windows.bat` is the normal entry point. There is no need to
+  open separate backend and frontend terminals.
 - Use the LAN overlay address shown in the dashboard when vMix is on another
   computer. Both computers must be on the same network.
 - Diagnostic QR boxes are operator-only and are never included in the broadcast

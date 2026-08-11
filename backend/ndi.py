@@ -8,11 +8,50 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-DEFAULT_LIBRARY_CANDIDATES = (
+MACOS_LIBRARY_CANDIDATES = (
     Path("/Applications/NDI Scan Converter.app/Contents/Frameworks/libndi.dylib"),
     Path("/Applications/NDI Video Monitor.app/Contents/Frameworks/libndi.dylib"),
     Path("/usr/local/lib/libndi.dylib"),
 )
+WINDOWS_LIBRARY_NAME = "Processing.NDI.Lib.x64.dll"
+
+
+def _expand_library_candidate(path: Path, library_name: str) -> list[Path]:
+    """Accept either an exact library path or a directory containing it."""
+    return [path / library_name] if path.suffix.lower() != ".dll" else [path]
+
+
+def _windows_library_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    override = os.environ.get("PJM_QR_NDI_LIB") or os.environ.get("PJM_NDI_LIB")
+    if override:
+        candidates.extend(_expand_library_candidate(Path(override), WINDOWS_LIBRARY_NAME))
+
+    # NDI installers expose the runtime directory through one of these variables.
+    for variable in ("NDI_RUNTIME_DIR_V6", "NDI_RUNTIME_DIR_V5"):
+        value = os.environ.get(variable)
+        if value:
+            candidates.extend(_expand_library_candidate(Path(value), WINDOWS_LIBRARY_NAME))
+
+    sdk_directory = os.environ.get("NDI_SDK_DIR")
+    if sdk_directory:
+        sdk = Path(sdk_directory)
+        candidates.extend((sdk / "Bin" / "x64" / WINDOWS_LIBRARY_NAME, sdk / "Bin" / WINDOWS_LIBRARY_NAME))
+
+    program_files = os.environ.get("ProgramFiles")
+    if program_files:
+        ndi_root = Path(program_files) / "NDI"
+        candidates.extend(
+            (
+                ndi_root / "NDI 6 Runtime" / WINDOWS_LIBRARY_NAME,
+                ndi_root / "NDI 5 Runtime" / WINDOWS_LIBRARY_NAME,
+                ndi_root / "NDI 6 SDK" / "Bin" / "x64" / WINDOWS_LIBRARY_NAME,
+                ndi_root / "NDI 5 SDK" / "Bin" / "x64" / WINDOWS_LIBRARY_NAME,
+            )
+        )
+
+    # Preserve order while removing duplicates caused by overlapping environment variables.
+    return list(dict.fromkeys(candidates))
 
 
 class _Source(ctypes.Structure):
@@ -81,6 +120,7 @@ class NDIFinder:
         self._lock = threading.Lock()
         self._library: ctypes.CDLL | None = None
         self._finder: int | None = None
+        self._dll_directory = None
         self.error = ""
         self._load()
 
@@ -116,16 +156,33 @@ class NDIFinder:
         return NDIReceiver(self._library, source_name)
 
     def _load(self) -> None:
-        if platform.system() != "Darwin":
-            self.error = "The first PJM NDI adapter currently targets macOS."
-            return
+        system = platform.system()
         override = os.environ.get("PJM_QR_NDI_LIB") or os.environ.get("PJM_NDI_LIB")
-        candidates = (Path(override),) if override else DEFAULT_LIBRARY_CANDIDATES
+        if system == "Darwin":
+            candidates = (Path(override),) if override else MACOS_LIBRARY_CANDIDATES
+            missing_message = "NDI Tools runtime was not found. Install NDI Tools or set PJM_QR_NDI_LIB."
+        elif system == "Windows":
+            if ctypes.sizeof(ctypes.c_void_p) != 8:
+                self.error = "PJM QR Operator requires 64-bit Python for NDI on Windows."
+                return
+            candidates = tuple(_windows_library_candidates())
+            missing_message = (
+                "NDI runtime was not found. Install 64-bit NDI Tools, restart the app, "
+                "or set PJM_QR_NDI_LIB to Processing.NDI.Lib.x64.dll."
+            )
+        else:
+            self.error = f"The PJM NDI adapter supports macOS and Windows, not {system}."
+            return
+
         library_path = next((path for path in candidates if path.exists()), None)
         if library_path is None:
-            self.error = "NDI Tools runtime was not found."
+            self.error = missing_message
             return
         try:
+            if system == "Windows" and hasattr(os, "add_dll_directory"):
+                # Python 3.8+ no longer searches arbitrary DLL directories by default.
+                # Keep this handle alive for as long as the NDI library is loaded.
+                self._dll_directory = os.add_dll_directory(str(library_path.parent))
             library = ctypes.CDLL(str(library_path))
             library.NDIlib_initialize.restype = ctypes.c_bool
             library.NDIlib_find_create_v2.argtypes = [ctypes.POINTER(_FindCreate)]
