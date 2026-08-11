@@ -27,6 +27,26 @@ terminal to stop both servers.
 - vMix browser overlay: `http://127.0.0.1:5174/overlay/main`
 - Raw SVG: `http://127.0.0.1:5174/api/overlay.svg`
 
+## Features and core workflow
+
+1. **Choose the video source.** Use **Browser camera / phone** for testing or
+   select an available NDI feed for production.
+2. **Choose the competitor data.** In **Event Data**, use **Live API** and select
+   the active round. **Backup CSV** provides an offline fallback, while
+   **Manual** lets the operator enter and save emergency on-air labels.
+3. **Detect and confirm a table.** The dashboard decodes the table QR, looks up
+   its current assignment, and stabilizes the selected competitor across brief
+   missed reads. **Focus Behavior** controls confirmation hits, the hit window,
+   dropout hold, and when a larger competing QR may take focus.
+4. **Check the result.** **Detected Competitor** shows the current candidate and
+   provides overlay on/off, lock, and reset controls. **Diagnostics** can draw
+   green and red QR boxes in the operator preview; these never appear on air.
+5. **Prepare the graphic.** In **Overlay Content**, drag and resize the
+   lower-third and choose whether member names and nationality are included.
+6. **Send it to vMix.** In **vMix Outputs**, select the appropriate local or LAN
+   address and add the transparent browser-overlay URL as a 1920×1080 browser
+   input. The raw SVG URL is also available for polling or troubleshooting.
+
 ## Important notes
 
 - Live API mode defaults to the Portland Jigsaw Masters competition. Confirm the
