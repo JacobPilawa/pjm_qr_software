@@ -9,14 +9,50 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 
 API_ROOT = "https://puzzled.speedpuzzling.nl/api/public/data"
 DEFAULT_COMPETITION_ID = "019f7652-3968-7176-b00c-49b7deab1bb4"
 LEGACY_EXAMPLE_COMPETITION_ID = "019f2a18-3676-7015-a4cd-c891d7845d77"
 UUID_PATTERN = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+PJM_TIME_ZONE = ZoneInfo("America/Los_Angeles")
+PJM_SCHEDULE_WINDOW = timedelta(minutes=15)
+PJM_ROUND_SCHEDULE = {
+    "individual preliminary one": ((2026, 8, 14, 10, 0), (2026, 8, 14, 12, 0)),
+    "individual preliminary two": ((2026, 8, 14, 12, 30), (2026, 8, 14, 14, 30)),
+    "duos preliminary one": ((2026, 8, 14, 15, 0), (2026, 8, 14, 17, 0)),
+    "individual preliminary three": ((2026, 8, 15, 9, 30), (2026, 8, 15, 11, 30)),
+    "duos preliminary two": ((2026, 8, 15, 12, 30), (2026, 8, 15, 14, 30)),
+    "team finals": ((2026, 8, 15, 15, 30), (2026, 8, 15, 18, 0)),
+    "duo finals": ((2026, 8, 16, 9, 30), (2026, 8, 16, 11, 30)),
+    "individual finals": ((2026, 8, 16, 12, 30), (2026, 8, 16, 14, 30)),
+}
+
+
+def _scheduled_pjm_round_id(rounds: list[dict[str, Any]], now: datetime | None = None) -> str | None:
+    """Return the published PJM round active within its start/end grace window."""
+    local_now = now or datetime.now(PJM_TIME_ZONE)
+    if local_now.tzinfo is None:
+        local_now = local_now.replace(tzinfo=PJM_TIME_ZONE)
+    else:
+        local_now = local_now.astimezone(PJM_TIME_ZONE)
+    matches: list[tuple[datetime, str]] = []
+    for round_info in rounds:
+        schedule = PJM_ROUND_SCHEDULE.get(str(round_info.get("name") or "").strip().casefold())
+        if schedule is None:
+            continue
+        start_parts, end_parts = schedule
+        start = datetime(*start_parts, tzinfo=PJM_TIME_ZONE)
+        end = datetime(*end_parts, tzinfo=PJM_TIME_ZONE)
+        if start - PJM_SCHEDULE_WINDOW <= local_now <= end + PJM_SCHEDULE_WINDOW:
+            matches.append((start, str(round_info["id"])))
+    # The ±15-minute windows touch when two rounds are separated by 30 minutes.
+    # At that exact boundary, favor the upcoming round rather than the one ending.
+    return max(matches, key=lambda item: item[0])[1] if matches else None
 
 
 def _full_name(member: dict[str, Any]) -> str:
@@ -243,7 +279,11 @@ class EventDataService:
                 # A slow startup/configuration request must not overwrite a round
                 # the operator selected while that request was in flight.
                 current_round = self.api_round_id
-                default_round = next((item["id"] for item in rounds if "setup" not in item["name"].lower()), rounds[0]["id"])
+                scheduled_round = _scheduled_pjm_round_id(rounds) if competition_id == DEFAULT_COMPETITION_ID else None
+                default_round = scheduled_round or next(
+                    (item["id"] for item in rounds if "setup" not in item["name"].lower()),
+                    rounds[0]["id"],
+                )
                 selected = (
                     current_round if any(item["id"] == current_round for item in rounds)
                     else previous_round if any(item["id"] == previous_round for item in rounds)

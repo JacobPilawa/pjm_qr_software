@@ -74,6 +74,10 @@ terminal to stop both services.
 
 - Live API mode defaults to the Portland Jigsaw Masters competition. Confirm the
   active round before broadcast.
+- When the PJM competition opens, it automatically selects the published round
+  from 15 minutes before its start through 15 minutes after its end, using
+  Portland time. Outside those windows it defaults to Individual Preliminary
+  One. A round selected manually by the operator is not changed by refreshes.
 - Backup CSVs are snapshots and may disagree with the live API. Sources are
   selected explicitly and never merged.
 - Manual presets are stored in the operator browser, not in project files.
