@@ -72,6 +72,9 @@ terminal to stop both services.
 - Manual presets are stored in the operator browser, not in project files.
 - `data/rosters/sample_competitors.csv` contains the fixed QR-to-table mapping
   and is required even though its filename says `sample`.
+- `assets/table-cards/Portland-Jigsaw-Masters-table-cards.pdf` is the final
+  15-page printable table-card set retained with the project for reference and
+  reprinting.
 - NDI is optional. The NDI runtime is not bundled; install 64-bit NDI Tools on
   the computer if NDI input is needed. Browser camera input works without it.
 - On Windows, `start_windows.bat` is the normal entry point. There is no need to
